@@ -11,6 +11,9 @@ using namespace vaip;
 
 int main() {
     // TODO: initialize execution provider and get device from it
+    // get VAI execution provider
+    //Microsoft::WRL::ComPtr<ID3D12Device> d3dDevice;
+    //ORT_THROW_IF_FAILED(provider->GetD3DDevice(d3dDevice.GetAddressOf()));
 
     // Alternativelly create the d3d device.ORT_THROW_IF_FAILED
     ComPtr<ID3D12Device> d3d12_device;
