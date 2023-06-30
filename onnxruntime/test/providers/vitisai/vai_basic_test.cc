@@ -11,9 +11,12 @@ using namespace vaip;
 
 int main() {
     // TODO: initialize execution provider and get device from it
-    // get VAI execution provider
     //Microsoft::WRL::ComPtr<ID3D12Device> d3dDevice;
     //ORT_THROW_IF_FAILED(provider->GetD3DDevice(d3dDevice.GetAddressOf()));
+
+    /* or another option is via command queue:
+    * ComPtr<ID3D12Device> device;
+    GRAPHICS_THROW_IF_FAILED(dxqueue->GetDevice(IID_GRAPHICS_PPV_ARGS(device.GetAddressOf())));*/
 
     // Alternativelly create the d3d device.ORT_THROW_IF_FAILED
     ComPtr<ID3D12Device> d3d12_device;
@@ -50,17 +53,14 @@ int main() {
 
     // TODO: add input data here 
     uint16_t indices[] = {
-        // front face
         0, 1, 2,
         0, 2, 3,
-        // back face
         4, 6, 5,
         4, 7, 6,
-        // left face
         4, 5, 1,
         4, 1, 0};
 
-    const UINT byteSize = 18 * sizeof(uint16_t);
+    const UINT byteSize = sizeof(indices) * sizeof(uint16_t);
 
     // copy CPU buffer to GPU 
     bufferGPU = tensor_proto_new_d3d12_cpu_to_gpu(d3d12_device.Get(), bufferUploader, cmdList.Get(),
