@@ -2,15 +2,18 @@
 // Licensed under the MIT License.
 #pragma once
 
-#include "C:\Users\tvukovic\dev\onnxruntime\include\onnxruntime\core\common\gsl.h"
-#include "onnx/onnx_pb.h"
+//#include "C:\Users\tvukovic\dev\onnxruntime\include\onnxruntime\core\common\gsl.h"
+//#include "onnx/onnx_pb.h"
+#include <vector>
+#include <string>
 
-using Microsoft::WRL::ComPtr;
+#include <wrl.h>
 
 
 namespace vaip {
+using Microsoft::WRL::ComPtr;
 
-void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue)
+void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue);
 
 gsl::span<const char> tensor_proto_as_raw(
     const ONNX_NAMESPACE::TensorProto& tensor);
@@ -27,8 +30,7 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
     const std::string& name, const std::vector<int64_t>& shape,
     const std::vector<int32_t>& data);
 
-
-Microsoft::WRL::ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
+ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
     const Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
@@ -41,7 +43,6 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
     ComPtr<ID3D12CommandQueue> cmdQueue);
-
 
 ONNX_NAMESPACE::TensorProto tensor_proto_new_i64(
     const std::string& name, const std::vector<int64_t>& shape,

@@ -111,7 +111,7 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 //  4. unmap
 // 
 // tensor proto for d3d12 (from cpu to gpu) - input tensor , add this before execution context
-Microsoft::WRL::ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
+ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
     const Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
