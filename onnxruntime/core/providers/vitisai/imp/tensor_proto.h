@@ -2,12 +2,19 @@
 // Licensed under the MIT License.
 #pragma once
 
-//#include "C:\Users\tvukovic\dev\onnxruntime\include\onnxruntime\core\common\gsl.h"
-//#include "onnx/onnx_pb.h"
-#include <vector>
-#include <string>
+#include "core/common/gsl.h"
+#include "onnx/onnx_pb.h"
+#include "core/providers/dml/DmlExecutionProvider/src/External/D3DX12/d3dx12.h"
+#include "core/providers/dml/DmlExecutionProvider/src/ErrorHandling.h"
 
+#include <cstdint>
+#include <limits>
 #include <wrl.h>
+#include <wil/Resource.h>
+#include <wrl.h>
+#include <d3d12.h>
+
+#define FENCE_SIGNAL_VALUE 1
 
 
 namespace vaip {
@@ -30,15 +37,15 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
     const std::string& name, const std::vector<int64_t>& shape,
     const std::vector<int32_t>& data);
 
-ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
+ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(  //
     ID3D12Device* device,
-    const Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
+    ComPtr<ID3D12Resource> UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
     const void* initData,
     size_t byteSize);
 
 void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const Microsoft::WRL::ComPtr<ID3D12Resource> InputBuffer,
+    const ComPtr<ID3D12Resource> InputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,

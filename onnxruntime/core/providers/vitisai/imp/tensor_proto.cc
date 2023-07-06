@@ -3,12 +3,11 @@
 #include "./tensor_proto.h"
 #include "./vai_assert.h"
 
-#include <cstdint>
-#include <limits>
 
 namespace vaip {
+using Microsoft::WRL::ComPtr;
 
-void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue) {
+void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
     // CPU GPU synchronization
     // flushing cmd queue using a fence
     //
@@ -17,7 +16,7 @@ void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue) {
     wil::unique_event hDirectEvent(directEvent);
 
     // Create Fence
-    ::Microsoft::WRL::ComPtr<ID3D12Fence> spDirectFence = nullptr;
+    ComPtr<ID3D12Fence> spDirectFence = nullptr;
     ORT_THROW_IF_FAILED(device->CreateFence(
         0,
         D3D12_FENCE_FLAG_NONE,
@@ -30,7 +29,7 @@ void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue) {
     // Wait for signal
     DWORD retVal = WaitForSingleObject(hDirectEvent.get(), INFINITE);
     if (retVal != WAIT_OBJECT_0) {
-      EXPECT_HRESULT_SUCCEEDED(E_UNEXPECTED);
+      ORT_THROW_IF_FAILED(E_UNEXPECTED);
     }
 }
 
@@ -111,38 +110,43 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 //  4. unmap
 // 
 // tensor proto for d3d12 (from cpu to gpu) - input tensor , add this before execution context
-ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
+ ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
-    const Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
+    ComPtr<ID3D12Resource> UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
     const void* initData,
     size_t byteSize
     ) {
     
-    // according to DirectML example
+    // according to DirectML example 
 
     // 1. copy surface to GPU buffer
 
-    Microsoft::WRL::ComPtr<ID3D12Resource> GPUResource;
+    ComPtr<ID3D12Resource> GPUResource;
+    auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    auto buffer = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
 
-    // Create the actual default buffer resource.
-    ORT_THROW_IF_FAILED(device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+    // Create the actual default buffer resource. ORT_THROW_IF_FAILED(d
+    device->CreateCommittedResource(
+        &heap,
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+        &buffer,
         D3D12_RESOURCE_STATE_COMMON,
         nullptr,
-        IID_PPV_ARGS(GPUResource.GetAddressOf())));
+        IID_PPV_ARGS(GPUResource.GetAddressOf()));
+
+    heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+
 
     // In order to copy CPU memory data into our default buffer, we need
-    // to ORT_THROW_IF_FAILED an intermediate upload heap - it is GPU upload buffer
-    ORT_THROW_IF_FAILED(device->CreateCommittedResource(
-         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+    // to ORT_THROW_IF_FAILED an intermediate upload heap - it is GPU upload buffer RT_THROW_IF_FAILED(
+    device->CreateCommittedResource(
+         &heap,
          D3D12_HEAP_FLAG_NONE,
-         &CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+         &buffer,
          D3D12_RESOURCE_STATE_GENERIC_READ,
          nullptr,
-        IID_PPV_ARGS(UploadBuffer.GetAddressOf())));
+         IID_PPV_ARGS(UploadBuffer.GetAddressOf()));
 
      // Describe the data we want to copy into the default buffer.
      
@@ -162,17 +166,18 @@ ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
      // will copy the CPU memory into the intermediate upload heap.
      // Then, using ID3D12CommandList::CopySubresourceRegion,
      // the intermediate upload heap data will be copied to mBuffer.
-     cmdList->ResourceBarrier(1,
-                            &CD3DX12_RESOURCE_BARRIER::Transition(GPUResource.Get(),
+     auto barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(GPUResource.Get(),
                                                 D3D12_RESOURCE_STATE_COMMON,
-                                                D3D12_RESOURCE_STATE_COPY_DEST));
+                                                D3D12_RESOURCE_STATE_COPY_DEST);
+     cmdList->ResourceBarrier(1,&barrier1);
      UpdateSubresources<1>(cmdList,
                            GPUResource.Get(), UploadBuffer.Get(),
                            0, 0, 1, &subResourceData);
-     cmdList->ResourceBarrier(1,
-                            &CD3DX12_RESOURCE_BARRIER::Transition(GPUResource.Get(),
-                                                D3D12_RESOURCE_STATE_COPY_DEST,
-                                                D3D12_RESOURCE_STATE_GENERIC_READ));
+
+     auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(GPUResource.Get(),
+                                                           D3D12_RESOURCE_STATE_COPY_DEST,
+                                                           D3D12_RESOURCE_STATE_GENERIC_READ);
+     cmdList->ResourceBarrier(1,&barrier2);
     
     return GPUResource;
 }
@@ -189,7 +194,7 @@ ComPtr<ID3D12Resource>& tensor_proto_new_d3d12_cpu_to_gpu(
 
 
 void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const Microsoft::WRL::ComPtr<ID3D12Resource> InputBuffer,
+    const ComPtr<ID3D12Resource> InputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
@@ -199,14 +204,17 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     // The output buffer (created below) is on a default heap, so only the GPU can access it.
 
     // TODO: See do I need to create this buffer or I can just pass Input Buffer and readback from it
-    Microsoft::WRL::ComPtr<ID3D12Resource> outputBuffer;
+    ComPtr<ID3D12Resource> outputBuffer;
+
+    auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    auto buffer = CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize,
+                                                D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
     
     // Create the buffer that will be a UAV.
     ORT_THROW_IF_FAILED(device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        &heap,
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize,
-                                       D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
+        &buffer,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
         nullptr,
         IID_PPV_ARGS(&outputBuffer)));
@@ -226,28 +234,30 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
 
     // Schedule to copy the data to the default buffer to the readback
     // buffer.
-    cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-                                    outputBuffer.Get(),
-                                    D3D12_RESOURCE_STATE_COMMON,
-                                    D3D12_RESOURCE_STATE_COPY_SOURCE));
+    auto barrier1 = CD3DX12_RESOURCE_BARRIER::Transition(
+        outputBuffer.Get(),
+        D3D12_RESOURCE_STATE_COMMON,
+        D3D12_RESOURCE_STATE_COPY_SOURCE);
+    cmdList->ResourceBarrier(1, &barrier1);
 
 
-    cmdList->CopyResource(readbackBuffer.get(), outputBuffer.get());
+    cmdList->CopyResource(readbackBuffer.Get(), outputBuffer.Get());
 
-    cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
-                                         outputBuffer.Get(),
-                                         D3D12_RESOURCE_STATE_COPY_SOURCE,
-                                         D3D12_RESOURCE_STATE_COMMON));
+    auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(
+        outputBuffer.Get(),
+        D3D12_RESOURCE_STATE_COPY_SOURCE,
+        D3D12_RESOURCE_STATE_COMMON);
+    cmdList->ResourceBarrier(1, &barrier2);
 
 
     // Wait for completion and map the result
     ORT_THROW_IF_FAILED(cmdList->Close());
 
     // Add the command list to the queue for execution.
-    ID3D12CommandList* cmdsLists[] = {cmdList.Get()};
+    ID3D12CommandList* cmdsLists[] = {cmdList};
     cmdQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-    FlushCommandQueue(cmdQueue);  
+    FlushCommandQueue(cmdQueue, device);  
 
     void* dst = nullptr;
 
