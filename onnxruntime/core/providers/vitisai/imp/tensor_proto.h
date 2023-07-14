@@ -11,7 +11,6 @@
 #include <limits>
 #include <wrl.h>
 #include <wil/Resource.h>
-#include <wrl.h>
 #include <d3d12.h>
 
 #define FENCE_SIGNAL_VALUE 1
@@ -41,7 +40,7 @@ ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(  //
     ID3D12Device* device,
     ComPtr<ID3D12Resource> UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
-    const void* initData,
+    void* initData,
     size_t byteSize);
 
 void* tensor_proto_new_d3d12_gpu_to_cpu(
@@ -50,6 +49,8 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
     ComPtr<ID3D12CommandQueue> cmdQueue);
+
+static gsl::span<std::byte> AsByteSpan(void* data, size_t sizeInBytes);
 
 ONNX_NAMESPACE::TensorProto tensor_proto_new_i64(
     const std::string& name, const std::vector<int64_t>& shape,

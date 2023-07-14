@@ -3,6 +3,10 @@
 #include "./tensor_proto.h"
 #include "./vai_assert.h"
 
+#include <iostream>
+#include <string>
+#include <fstream>
+
 
 namespace vaip {
 using Microsoft::WRL::ComPtr;
@@ -114,7 +118,7 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
     ID3D12Device* device,
     ComPtr<ID3D12Resource> UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
-    const void* initData,
+    void* initData,
     size_t byteSize
     ) {
     
@@ -203,7 +207,6 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
 
     // The output buffer (created below) is on a default heap, so only the GPU can access it.
 
-    // TODO: See do I need to create this buffer or I can just pass Input Buffer and readback from it
     ComPtr<ID3D12Resource> outputBuffer;
 
     auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -259,15 +262,30 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
 
     FlushCommandQueue(cmdQueue, device);  
 
-    void* dst = nullptr;
+    uint16_t* dst = nullptr;
+    //gsl::span<std::byte> dstByteSpan = AsByteSpan(dst, tensorByteSize);
 
-    void* bufferData = nullptr;
+    uint16_t* bufferData = nullptr;
     D3D12_RANGE range = {0, tensorByteSize};
-    ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));
+    ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));    
 
-    //  4. copy the data into a system memory array for further processing on the CPU side
+    
+    ////  4. copy the data into a system memory array for further processing on the CPU side
+    //// HERE IS AN ERROR
+    //memcpy(dst, bufferData, tensorByteSize);
+    
+    // debug: Write to file
+    std::ofstream fw("result.txt", std::ofstream::out);
 
-    memcpy(dst, bufferData, tensorByteSize);
+    // check if file was successfully opened for writing
+    if (fw.is_open()) {
+    // store array contents to text file
+    for (int i = 0; i < 1; ++i) {
+      fw << bufferData[i] << "\n";
+    }
+    fw.close();
+    } else
+    std::cout << "Problem with opening file";
 
     //  5. unmap - deallocates cpu virtual address range
 
@@ -275,6 +293,10 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
 
     return dst;
 
+}
+
+static gsl::span<std::byte> AsByteSpan(void* data, size_t sizeInBytes) {
+    return gsl::make_span(static_cast<std::byte*>(data), sizeInBytes);
 }
 
 
