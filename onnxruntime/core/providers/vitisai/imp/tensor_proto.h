@@ -38,13 +38,13 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 
 ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(  //
     ID3D12Device* device,
-    ComPtr<ID3D12Resource> UploadBuffer,
+    ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
-    void* initData,
+    const void* initData,
     size_t byteSize);
 
 void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const ComPtr<ID3D12Resource> InputBuffer,
+    const ComPtr<ID3D12Resource>& InputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,

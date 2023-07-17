@@ -17,7 +17,7 @@ namespace onnxruntime {
 namespace test {
 
 template <typename TElement>
-void VAIExecutionProviderTest(TElement indices[]) {
+void VAIExecutionProviderTest(TElement indices[], int size) {
 
   // TODO: initialize execution provider and get device from it
   // Microsoft::WRL::ComPtr<ID3D12Device> d3dDevice;
@@ -29,7 +29,7 @@ void VAIExecutionProviderTest(TElement indices[]) {
 
   // Alternativelly create the d3d device
 
-  // TODO: dodja ovde sa adapterom create device
+  // TODO: create device with adapter
 
   /*ComPtr<IDXGIFactory4> dxgi_factory;
   ORT_THROW_IF_FAILED(CreateDXGIFactory2(0, IID_GRAPHICS_PPV_ARGS(dxgi_factory.ReleaseAndGetAddressOf())));
@@ -67,7 +67,7 @@ void VAIExecutionProviderTest(TElement indices[]) {
       nullptr,          // Initial PipelineStateObject
       IID_PPV_ARGS(cmdList.GetAddressOf())));
 
-  size_t byteSize = sizeof(indices) * sizeof(TElement);
+  size_t byteSize = size * sizeof(TElement);
 
   ComPtr<ID3D12Resource> bufferUploader = nullptr;
   ComPtr<ID3D12Resource> bufferGPU = nullptr;
@@ -77,37 +77,34 @@ void VAIExecutionProviderTest(TElement indices[]) {
                                                 indices, byteSize);
 
   // copy GPU buffer to CPU (readback)  void* redbackCpuResult = 
-  void* dst = nullptr;
+  void* output = nullptr;
   
-  dst = vaip::tensor_proto_new_d3d12_gpu_to_cpu(bufferGPU, d3d12_device.Get(), cmdList.Get(),
+  output = vaip::tensor_proto_new_d3d12_gpu_to_cpu(bufferGPU, d3d12_device.Get(), cmdList.Get(),
                                                              byteSize, dxQueue);
-  //// TODO: Write to file
-  //std::ofstream fw("result1.txt", std::ofstream::out);
 
-  //// check if file was successfully opened for writing
-  //if (fw.is_open()) {
-  //  // store array contents to text file
-  //  for (int i = 0; i < 18; ++i) {
-  //    fw << static_cast<uint16_t*>(dst)[i] << "\n";
-  //  }
-  //  fw.close();
-  //} else
-  //  std::cout << "Problem with opening file";
+  // Write output to file
+  std::ofstream fw("result_dst.txt", std::ofstream::out);
+  // check if file was successfully opened for writing
+  if (fw.is_open()) {
+    // store array contents to text file
+    for (int i = 0; i < size; i++) {
+      fw << static_cast<uint16_t*>(output)[i] << "\n";
+    }
+    fw.close();
+  } else
+    std::cout << "Problem with opening file";
 }
 
 // add command to test function written above, need to fix include issues to add it
 TEST(VitisAIExecutionProviderTest, VAIPTest) {
   //add input data here
-  /*uint16_t indices[] = {
+  uint16_t indices[] = {
       1, 1, 2,
-      5, 2, 3,
-      4, 6, 5,
-      4, 7, 6,
-      4, 5, 1,
-      4, 1, 0};*/
-  uint16_t indices[] = {1};
+      5, 2, 3
+     };
+  int size = sizeof(indices) / sizeof(indices[0]);
 
-  VAIExecutionProviderTest<uint16_t>(indices);
+  VAIExecutionProviderTest<uint16_t>(indices, size);
 }
 
 }  // namespace test
