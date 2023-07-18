@@ -240,18 +240,19 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     FlushCommandQueue(cmdQueue, device);  
 
     void* bufferData = nullptr;
+    void* dst = nullptr;
     D3D12_RANGE range = {0, tensorByteSize};
     ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));    
 
     //// copy the data into a system memory array for further processing on the CPU side
     //// HERE IS AN ERROR - do we need memcpy, can we use just Map?
-    //memcpy(bufferData, &dst, tensorByteSize);
+    //memcpy(dst, bufferData, tensorByteSize);
 
     //  unmap - deallocates cpu virtual address range
 
     readbackBuffer->Unmap(0, &range);
 
-    return bufferData;
+    return dst;
 }
 
 ONNX_NAMESPACE::TensorProto tensor_proto_new_i64(

@@ -16,27 +16,38 @@ using Microsoft::WRL::ComPtr;
 namespace onnxruntime {
 namespace test {
 
+LARGE_INTEGER getStartingTime() {
+  LARGE_INTEGER startingTime;
+  QueryPerformanceCounter(&startingTime);
+  return startingTime;
+}
+
+int getElapsedTime(LARGE_INTEGER startingTime) {
+  LARGE_INTEGER endingTime, elapsedMicroseconds, frequency;
+  QueryPerformanceFrequency(&frequency);
+  QueryPerformanceCounter(&endingTime);
+  elapsedMicroseconds.QuadPart = endingTime.QuadPart - startingTime.QuadPart;
+  //
+  // We now have the elapsed number of ticks, along with the
+  // number of ticks-per-second. We use these values
+  // to convert to the number of elapsed microseconds.
+  // To guard against loss-of-precision, we convert
+  // to microseconds *before* dividing by ticks-per-second.
+  //
+  elapsedMicroseconds.QuadPart *= 1000000;
+  elapsedMicroseconds.QuadPart /= frequency.QuadPart;
+
+  return elapsedMicroseconds.QuadPart;
+}
+
+struct uploadReadback {
+  float upload, readback;
+};
+
+typedef struct uploadReadback Struct;
+
 template <typename TElement>
-void VAIExecutionProviderTest(TElement indices[], int size) {
-
-  // TODO: initialize execution provider and get device from it
-  // Microsoft::WRL::ComPtr<ID3D12Device> d3dDevice;
-  // ORT_THROW_IF_FAILED(provider->GetD3DDevice(d3dDevice.GetAddressOf()));
-
-  /* or another option is via command queue:
-  * ComPtr<ID3D12Device> device;
-  GRAPHICS_THROW_IF_FAILED(dxqueue->GetDevice(IID_GRAPHICS_PPV_ARGS(device.GetAddressOf())));*/
-
-  // Alternativelly create the d3d device
-
-  // TODO: create device with adapter
-
-  /*ComPtr<IDXGIFactory4> dxgi_factory;
-  ORT_THROW_IF_FAILED(CreateDXGIFactory2(0, IID_GRAPHICS_PPV_ARGS(dxgi_factory.ReleaseAndGetAddressOf())));
-  ComPtr<IDXGIAdapter1> adapter;
-  ORT_THROW_IF_FAILED(dxgi_factory->EnumAdapters1(device_id, &adapter));
-  ComPtr<ID3D12Device> d3d12_device;
-  ORT_THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_GRAPHICS_PPV_ARGS(d3d12_device.ReleaseAndGetAddressOf())));*/
+Struct VAIExecutionProviderTest(std::vector<TElement> indices, int size) {
 
   ComPtr<ID3D12Device> d3d12_device; 
   
@@ -72,39 +83,80 @@ void VAIExecutionProviderTest(TElement indices[], int size) {
   ComPtr<ID3D12Resource> bufferUploader = nullptr;
   ComPtr<ID3D12Resource> bufferGPU = nullptr;
 
+  // calling CPU->GPU function and measuring time
+  LARGE_INTEGER start = getStartingTime();
   // copy CPU buffer to GPU
   bufferGPU = vaip::tensor_proto_new_d3d12_cpu_to_gpu(d3d12_device.Get(), bufferUploader, cmdList.Get(),
-                                                indices, byteSize);
+                                                      static_cast<void*>(indices.data()), byteSize);
+  int uploadElapsed = getElapsedTime(start);
 
-  // copy GPU buffer to CPU (readback)  void* redbackCpuResult = 
+  // copy GPU buffer to CPU (readback)  
   void* output = nullptr;
-  
-  output = vaip::tensor_proto_new_d3d12_gpu_to_cpu(bufferGPU, d3d12_device.Get(), cmdList.Get(),
-                                                             byteSize, dxQueue);
 
-  // Write output to file
-  std::ofstream fw("result_dst.txt", std::ofstream::out);
-  // check if file was successfully opened for writing
-  if (fw.is_open()) {
-    // store array contents to text file
-    for (int i = 0; i < size; i++) {
-      fw << static_cast<uint16_t*>(output)[i] << "\n";
-    }
-    fw.close();
-  } else
-    std::cout << "Problem with opening file";
+  // calling GPU->CPU readback function and measuring time
+  start = getStartingTime();
+  // copy GPU buffer to CPU (readback)
+  output = vaip::tensor_proto_new_d3d12_gpu_to_cpu(bufferGPU, d3d12_device.Get(), cmdList.Get(),
+                                                   byteSize, dxQueue);
+  
+  int readbackElapsed = getElapsedTime(start);
+
+  //// Write output to file
+  // std::ofstream fw("result_dst.txt", std::ofstream::out);
+  //// check if file was successfully opened for writing
+  // if (fw.is_open()) {
+  //   // store array contents to text file
+  //   for (int i = 0; i < size; i++) {
+  //     fw << reinterpret_cast<char(*)>(output)[i] << "\n";
+  //   }
+  //   fw.close();
+  // } else
+  //   std::cout << "Problem with opening file";
+
+  Struct s;
+  s.upload = uploadElapsed;
+  s.readback = readbackElapsed;
+  return s;
 }
 
-// add command to test function written above, need to fix include issues to add it
 TEST(VitisAIExecutionProviderTest, VAIPTest) {
-  //add input data here
-  uint16_t indices[] = {
-      1, 1, 2,
-      5, 2, 3
-     };
-  int size = sizeof(indices) / sizeof(indices[0]);
+  
+  // adding input data
+  std::vector<int8_t> int8_10k(10000);
+  std::vector<int8_t> int8_100k(100000);
+  std::vector<int8_t> int8_1m(1000000);
+  std::vector<int8_t> int8_10m(10000000);
 
-  VAIExecutionProviderTest<uint16_t>(indices, size);
+  // check if float is 32 bit
+  assert(CHAR_BIT * sizeof(float) == 32);
+
+  // create fp32 input data
+  std::vector<float> fp32_10k(10000); 
+  std::vector<float> fp32_100k(100000);
+  std::vector<float> fp32_1m(1000000);
+  std::vector<float> fp32_10m(10000000);
+
+  Struct res_fp32_10k = VAIExecutionProviderTest<float>(fp32_10k, 10000);
+  Struct res_int8_10k = VAIExecutionProviderTest<int8_t>(int8_10k, 10000);
+  Struct res_fp32_100k = VAIExecutionProviderTest<float>(fp32_100k, 100000);
+  Struct res_int8_100k = VAIExecutionProviderTest<int8_t>(int8_100k, 100000);
+  Struct res_fp32_1m = VAIExecutionProviderTest<float>(fp32_1m, 1000000);
+  Struct res_int8_1m = VAIExecutionProviderTest<int8_t>(int8_1m, 1000000);
+  Struct res_fp32_10m = VAIExecutionProviderTest<float>(fp32_10m, 10000000);
+  Struct res_int8_10m = VAIExecutionProviderTest<int8_t>(int8_10m, 10000000);
+
+  std::ofstream myfile;
+  myfile.open("results.csv");
+  myfile << "tensor size, int8 (GPU->CPU) [us], int8 (CPU->GPU) [us],fp32 (GPU->CPU) [us], fp32 (CPU->GPU) [us],\n";
+  myfile << "10k," << res_int8_10k.readback << "," << res_int8_10k.upload << "," << res_fp32_10k.readback << "," << res_fp32_10k.upload
+         << ",\n ";
+  myfile << "100k," << res_int8_100k.readback << "," << res_int8_100k.upload << "," << res_fp32_100k.readback << "," << res_fp32_100k.upload
+         << ",\n ";
+  myfile << "1m," << res_int8_1m.readback << "," << res_int8_1m.upload << "," << res_fp32_1m.readback << "," << res_fp32_1m.upload
+         << ",\n ";
+  myfile << "10m," << res_int8_10m.readback << "," << res_int8_10m.upload << "," << res_fp32_10m.readback << "," << res_fp32_10m.upload
+         << ",\n ";
+  myfile.close();
 }
 
 }  // namespace test
