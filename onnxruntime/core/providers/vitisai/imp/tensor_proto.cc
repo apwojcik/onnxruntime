@@ -182,23 +182,6 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     size_t tensorByteSize,
     ComPtr<ID3D12CommandQueue> cmdQueue) {
 
-    // The output buffer (created below) is on a default heap, so only the GPU can access it.
-
-    //ComPtr<ID3D12Resource> outputBuffer;
-
-   /* auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-    auto buffer = CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize,
-                                                D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-   */ 
-    //// Create the buffer that will be a UAV.
-    //ORT_THROW_IF_FAILED(device->CreateCommittedResource(
-    //    &heap,
-    //    D3D12_HEAP_FLAG_NONE,
-    //    &buffer,
-    //    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-    //    nullptr,
-    //    IID_PPV_ARGS(&outputBuffer)));
-
     // The readback buffer (created below) is on a readback heap, so that the CPU can access it.
     D3D12_HEAP_PROPERTIES readbackHeapProperties{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK)};
     D3D12_RESOURCE_DESC readbackBufferDesc{CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize)};
@@ -220,7 +203,6 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
         D3D12_RESOURCE_STATE_COPY_SOURCE);
     cmdList->ResourceBarrier(1, &barrier1);
 
-
     cmdList->CopyResource(readbackBuffer.Get(), outputBuffer.Get());
 
     auto barrier2 = CD3DX12_RESOURCE_BARRIER::Transition(
@@ -228,7 +210,6 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
         D3D12_RESOURCE_STATE_COPY_SOURCE,
         D3D12_RESOURCE_STATE_COMMON);
     cmdList->ResourceBarrier(1, &barrier2);
-
 
     // Wait for completion and map the result
     ORT_THROW_IF_FAILED(cmdList->Close());
@@ -239,18 +220,21 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
 
     FlushCommandQueue(cmdQueue, device);  
 
+    // Map the readback heap and copy it into the destination
+    D3D12_RANGE range{0, tensorByteSize};
+    void* dst = malloc(tensorByteSize);
     void* bufferData = nullptr;
-    void* dst = nullptr;
-    D3D12_RANGE range = {0, tensorByteSize};
+    
     ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));    
 
-    //// copy the data into a system memory array for further processing on the CPU side
-    //// HERE IS AN ERROR - do we need memcpy, can we use just Map?
-    //memcpy(dst, bufferData, tensorByteSize);
-
-    //  unmap - deallocates cpu virtual address range
-
-    readbackBuffer->Unmap(0, &range);
+    // copy the data into a system memory array for further processing on the CPU side
+    memcpy(dst, bufferData, tensorByteSize);
+   
+    // unmap - deallocates cpu virtual address range
+    D3D12_RANGE emptyRange{0, 0};
+    readbackBuffer->Unmap(
+        0,
+        &emptyRange);
 
     return dst;
 }

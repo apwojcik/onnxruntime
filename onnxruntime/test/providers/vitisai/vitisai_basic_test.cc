@@ -107,11 +107,11 @@ Struct VAIExecutionProviderTest(std::vector<TElement> indices, int size) {
   // if (fw.is_open()) {
   //   // store array contents to text file
   //   for (int i = 0; i < size; i++) {
-  //     fw << reinterpret_cast<char(*)>(output)[i] << "\n";
+  //     fw << static_cast<int*>(output)[i] << "\n";
   //   }
   //   fw.close();
-  // } else
-  //   std::cout << "Problem with opening file";
+  // }
+  free(output);  
 
   Struct s;
   s.upload = uploadElapsed;
