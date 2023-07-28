@@ -255,7 +255,7 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
   system("wmic cpu get name > sys_info.txt");
   system("wmic memorychip get speed >> sys_info.txt");
 
-  std::ifstream file("results.txt");
+  std::ifstream file("sys_info.txt");
   std::string str;
   std::string GPUName;
   std::string CPUName;
@@ -282,7 +282,7 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
   }  
 
   std::ofstream myfile;
-  myfile.open("sys_info.csv");
+  myfile.open("results.csv");
   
   myfile << "System information: \n";
   myfile << "CPU:," << CPUName;
