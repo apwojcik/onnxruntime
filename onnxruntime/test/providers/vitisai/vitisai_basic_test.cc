@@ -251,9 +251,9 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
    delete[] fp32_1m;
    delete[] fp32_10m;
 
-  system("wmic path win32_VideoController get name > results.txt");
-  system("wmic cpu get name >> results.txt");
-  system("wmic memorychip get speed >> results.txt");
+  system("wmic path win32_VideoController get name > gpu_info.txt");
+  system("wmic cpu get name > sys_info.txt");
+  system("wmic memorychip get speed >> sys_info.txt");
 
   std::ifstream file("results.txt");
   std::string str;
@@ -263,17 +263,26 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
 
   int count = 0;
   while (std::getline(file, str)) {
-    if (count == 2) {
-      GPUName = str;
-    } else if (count == 5) {
+   if (count == 1) {
       CPUName = str;
-    } else if (count == 7) {
+    } else if (count == 3) {
       memorySpeed = str;
     }
     count++;
   }  
+
+  std::ifstream file_gpu("gpu_info.txt");
+  count = 0;
+  while (std::getline(file_gpu, str)) {
+    if (count == 2) {
+      GPUName = str;
+      break;
+    } 
+    count++;
+  }  
+
   std::ofstream myfile;
-  myfile.open("results.csv");
+  myfile.open("sys_info.csv");
   
   myfile << "System information: \n";
   myfile << "CPU:," << CPUName;
