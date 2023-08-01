@@ -9,9 +9,9 @@
 
 
 namespace vaip {
-using Microsoft::WRL::ComPtr;
+//using Microsoft::WRL::ComPtr;
 
-void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
+void FlushCommandQueue(Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
     // CPU GPU synchronization
     // flushing cmd queue using a fence
     //
@@ -20,7 +20,7 @@ void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device
     wil::unique_event hDirectEvent(directEvent);
 
     // Create Fence
-    ComPtr<ID3D12Fence> spDirectFence = nullptr;
+    Microsoft::WRL::ComPtr<ID3D12Fence> spDirectFence = nullptr;
     ORT_THROW_IF_FAILED(device->CreateFence(
         0,
         D3D12_FENCE_FLAG_NONE,
@@ -107,16 +107,16 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 }
 
 // tensor proto for d3d12 (from cpu to gpu) - input tensor , add this before execution context
- ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
+Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
-    ComPtr<ID3D12Resource>& UploadBuffer,
+    Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
     const void* initData,
     size_t byteSize
     ) {
     
     // copy surface to GPU buffer
-    ComPtr<ID3D12Resource> GPUResource;
+    Microsoft::WRL::ComPtr<ID3D12Resource> GPUResource;
     auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     auto buffer = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
 
@@ -176,16 +176,16 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 }
 
 void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const ComPtr<ID3D12Resource>& outputBuffer,
+    const Microsoft::WRL::ComPtr<ID3D12Resource>& outputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
-    ComPtr<ID3D12CommandQueue> cmdQueue) {
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue) {
 
     // The readback buffer (created below) is on a readback heap, so that the CPU can access it.
     D3D12_HEAP_PROPERTIES readbackHeapProperties{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK)};
     D3D12_RESOURCE_DESC readbackBufferDesc{CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize)};
-    ComPtr<ID3D12Resource> readbackBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> readbackBuffer;
     ORT_THROW_IF_FAILED(device->CreateCommittedResource(
         &readbackHeapProperties,
         D3D12_HEAP_FLAG_NONE,

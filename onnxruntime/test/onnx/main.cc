@@ -246,10 +246,7 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
             enable_vitisai = true;
           } else if (!CompareCString(optarg, ORT_TSTR("xnnpack"))) {
             enable_xnnpack = true;
-          } else if (!CompareCString(optarg, ORT_TSTR("vitisai"))) {
-            enable_vitisai = true;
-          }
-          else {
+          } else {
             usage();
             return -1;
           }

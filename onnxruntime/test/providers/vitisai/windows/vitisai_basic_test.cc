@@ -7,12 +7,7 @@
 #include <cstddef>
 
 #include <iostream>
-#include <string>
 #include <fstream>
-
-using namespace vaip;
-using namespace std;
-using Microsoft::WRL::ComPtr;
 
 namespace onnxruntime {
 namespace test {
@@ -45,20 +40,18 @@ struct uploadReadback {
   float upload, readback;
 };
 
-typedef struct uploadReadback Struct;
-
 template <typename TElement>
-Struct VAIExecutionProviderTest(TElement* indices, int x, int y, int z) { 
+uploadReadback VAIExecutionProviderTest(TElement* indices, int x, int y, int z) { 
 
-  ComPtr<ID3D12Device> d3d12_device; 
+  Microsoft::WRL::ComPtr<ID3D12Device> d3d12_device; 
 
   int size = x * y * z;
   
   ORT_THROW_IF_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(d3d12_device.ReleaseAndGetAddressOf())));
 
-  ComPtr<ID3D12CommandQueue> dxQueue;
-  ComPtr<ID3D12CommandAllocator> allocator;
-  ComPtr<ID3D12GraphicsCommandList> cmdList;
+  Microsoft::WRL::ComPtr<ID3D12CommandQueue> dxQueue;
+  Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
+  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> cmdList;
 
   D3D12_COMMAND_QUEUE_DESC queueDesc = {};
   queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -83,8 +76,8 @@ Struct VAIExecutionProviderTest(TElement* indices, int x, int y, int z) {
 
   size_t byteSize = size * sizeof(TElement);
 
-  ComPtr<ID3D12Resource> bufferUploader = nullptr;
-  ComPtr<ID3D12Resource> bufferGPU = nullptr;
+  Microsoft::WRL::ComPtr<ID3D12Resource> bufferUploader = nullptr;
+  Microsoft::WRL::ComPtr<ID3D12Resource> bufferGPU = nullptr;
 
   // calling CPU->GPU function and measuring time
   LARGE_INTEGER start = getStartingTime();
@@ -118,26 +111,25 @@ Struct VAIExecutionProviderTest(TElement* indices, int x, int y, int z) {
   //      
   //     }
   //   }
-  //   fw.close();
   // }
-  free(output);  
+  if (output != NULL) free(output);  
 
-  Struct s;
+  uploadReadback s;
   s.upload = uploadElapsed;
   s.readback = readbackElapsed;
   return s;
 }
 
 template <typename TElement>
-Struct VAIExecutionProviderTest(TElement* indices, int size) {  
+uploadReadback VAIExecutionProviderTest(TElement* indices, int size) {  
 
-  ComPtr<ID3D12Device> d3d12_device;
+  Microsoft::WRL::ComPtr<ID3D12Device> d3d12_device;
 
   ORT_THROW_IF_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(d3d12_device.ReleaseAndGetAddressOf())));
 
-  ComPtr<ID3D12CommandQueue> dxQueue;
-  ComPtr<ID3D12CommandAllocator> allocator;
-  ComPtr<ID3D12GraphicsCommandList> cmdList;
+  Microsoft::WRL::ComPtr<ID3D12CommandQueue> dxQueue;
+  Microsoft::WRL::ComPtr<ID3D12CommandAllocator> allocator;
+  Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> cmdList;
 
   D3D12_COMMAND_QUEUE_DESC queueDesc = {};
   queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -162,8 +154,8 @@ Struct VAIExecutionProviderTest(TElement* indices, int size) {
 
   size_t byteSize = size * sizeof(TElement);
 
-  ComPtr<ID3D12Resource> bufferUploader = nullptr;
-  ComPtr<ID3D12Resource> bufferGPU = nullptr;
+  Microsoft::WRL::ComPtr<ID3D12Resource> bufferUploader = nullptr;
+  Microsoft::WRL::ComPtr<ID3D12Resource> bufferGPU = nullptr;
 
   // calling CPU->GPU function and measuring time
   LARGE_INTEGER start = getStartingTime();
@@ -193,12 +185,11 @@ Struct VAIExecutionProviderTest(TElement* indices, int size) {
   //         fw << static_cast<int*>(output)[i];
   //         fw << "\n";
   //   }
-  //   fw.close();
   // }
 
-  free(output);
+  if (output != NULL) free(output);
 
-  Struct s;
+  uploadReadback s;
   s.upload = uploadElapsed;
   s.readback = readbackElapsed;
   return s;
@@ -206,17 +197,34 @@ Struct VAIExecutionProviderTest(TElement* indices, int size) {
 
 
 TEST(VitisAIExecutionProviderTest, VAIPTest) {
+  /*int* array1 = new int[5];
+  for (int i = 0; i < 5; i++) {
+  
+  array1[i] = i;
+  }
+  uploadReadback res_3840x1260 = VAIExecutionProviderTest<int>(array1, 5);
+
+  int* array2 = new int[2*2*2];
+  for (int i = 0; i < 2; i++) {
+  for (int j = 0; j < 2; j++) {
+           for (int k = 0; k < 2; k++) {
+         array2[i + 2 * (j + 2 * k)] = i + 2 * (j + 2 * k);
+           }
+  }
+  
+  }
+  uploadReadback res_3840x12601 = VAIExecutionProviderTest<int>(array2, 2,2,2);*/
 
   // add input rgb tensor wxhx4 int8
   int8_t* array1 = new int8_t[3840 * 1260 * 4];
   int8_t* array2 = new int8_t[2560 * 1440 * 4];
   int8_t* array3 = new int8_t[1920 * 1080 * 4];
 
-  Struct res_3840x1260 = VAIExecutionProviderTest<int8_t>(array1, 3840, 1260, 4);
+  uploadReadback res_3840x1260 = VAIExecutionProviderTest<int8_t>(array1, 3840, 1260, 4);
   delete[] array1;
-  Struct res_2560x1440 = VAIExecutionProviderTest<int8_t>(array2, 2560, 1440, 4);
+  uploadReadback res_2560x1440 = VAIExecutionProviderTest<int8_t>(array2, 2560, 1440, 4);
   delete[] array2;
-  Struct res_1920x1080 = VAIExecutionProviderTest<int8_t>(array3, 1920, 1080, 4);
+  uploadReadback res_1920x1080 = VAIExecutionProviderTest<int8_t>(array3, 1920, 1080, 4);
   delete[] array3;
 
   // 1D input data
@@ -225,22 +233,19 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
   int8_t* int8_1m = new int8_t[1000000];
   int8_t* int8_10m = new int8_t[10000000];
 
-  // check if float is 32 bit
-  assert(CHAR_BIT * sizeof(float) == 32);
-
   float* fp32_10k = new float[10000];
   float* fp32_100k = new float[100000];
   float* fp32_1m = new float[1000000];
   float* fp32_10m = new float[10000000];
 
-   Struct res_fp32_10k = VAIExecutionProviderTest<float>(fp32_10k, 10000);
-   Struct res_int8_10k = VAIExecutionProviderTest<int8_t>(int8_10k, 10000);
-   Struct res_fp32_100k = VAIExecutionProviderTest<float>(fp32_100k, 100000);
-   Struct res_int8_100k = VAIExecutionProviderTest<int8_t>(int8_100k, 100000);
-   Struct res_fp32_1m = VAIExecutionProviderTest<float>(fp32_1m, 1000000);
-   Struct res_int8_1m = VAIExecutionProviderTest<int8_t>(int8_1m, 1000000);
-   Struct res_fp32_10m = VAIExecutionProviderTest<float>(fp32_10m, 10000000);
-   Struct res_int8_10m = VAIExecutionProviderTest<int8_t>(int8_10m, 10000000);
+   uploadReadback res_fp32_10k = VAIExecutionProviderTest<float>(fp32_10k, 10000);
+   uploadReadback res_int8_10k = VAIExecutionProviderTest<int8_t>(int8_10k, 10000);
+   uploadReadback res_fp32_100k = VAIExecutionProviderTest<float>(fp32_100k, 100000);
+   uploadReadback res_int8_100k = VAIExecutionProviderTest<int8_t>(int8_100k, 100000);
+   uploadReadback res_fp32_1m = VAIExecutionProviderTest<float>(fp32_1m, 1000000);
+   uploadReadback res_int8_1m = VAIExecutionProviderTest<int8_t>(int8_1m, 1000000);
+   uploadReadback res_fp32_10m = VAIExecutionProviderTest<float>(fp32_10m, 10000000);
+   uploadReadback res_int8_10m = VAIExecutionProviderTest<int8_t>(int8_10m, 10000000);
 
    delete[] int8_10k;
    delete[] int8_100k;
@@ -251,9 +256,9 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
    delete[] fp32_1m;
    delete[] fp32_10m;
 
-  system("wmic path win32_VideoController get name > gpu_info.txt");
-  system("wmic cpu get name > sys_info.txt");
-  system("wmic memorychip get speed >> sys_info.txt");
+  std::system("wmic path win32_VideoController get name > gpu_info.txt");
+  std::system("wmic cpu get name > sys_info.txt");
+  std::system("wmic memorychip get speed >> sys_info.txt");
 
   std::ifstream file("sys_info.txt");
   std::string str;
@@ -281,8 +286,7 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
     count++;
   }  
 
-  std::ofstream myfile;
-  myfile.open("results.csv");
+  std::ofstream myfile{"results.csv"};
   
   myfile << "System information: \n";
   myfile << "CPU:," << CPUName;
@@ -309,7 +313,6 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
          << ",\n ";
   myfile << "10M," << res_int8_10m.readback << "," << res_int8_10m.upload << "," << res_fp32_10m.readback << "," << res_fp32_10m.upload
          << ",\n ";
-  myfile.close();
 }
 
 }  // namespace test
