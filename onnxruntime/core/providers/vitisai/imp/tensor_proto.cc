@@ -35,7 +35,6 @@ int getElapsedTime(LARGE_INTEGER startingTime) {
   return (int)elapsedMicroseconds.QuadPart;
 }
 void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
->>>>>>> 9b2358e7d (Added memcpy elapsed time in CSV)
     // CPU GPU synchronization
     // flushing cmd queue using a fence
     //

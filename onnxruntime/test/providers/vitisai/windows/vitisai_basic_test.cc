@@ -201,7 +201,6 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
   float* fp32_1m = new float[1000000];
   float* fp32_10m = new float[10000000];
 
-=======
   uploadReadback res_fp32_10k = VAIExecutionProviderTest<float>(fp32_10k, 10000);
   uploadReadback res_int8_10k = VAIExecutionProviderTest<int8_t>(int8_10k, 10000);
   uploadReadback res_fp32_100k = VAIExecutionProviderTest<float>(fp32_100k, 100000);
@@ -210,7 +209,6 @@ TEST(VitisAIExecutionProviderTest, VAIPTest) {
   uploadReadback res_int8_1m = VAIExecutionProviderTest<int8_t>(int8_1m, 1000000);
   uploadReadback res_fp32_10m = VAIExecutionProviderTest<float>(fp32_10m, 10000000);
   uploadReadback res_int8_10m = VAIExecutionProviderTest<int8_t>(int8_10m, 10000000);
->>>>>>> 9b2358e7d (Added memcpy elapsed time in CSV):onnxruntime/test/providers/vitisai/vitisai_basic_test.cc
 
   delete[] int8_10k;
   delete[] int8_100k;
