@@ -12,13 +12,16 @@
 #include <wrl.h>
 #include <wil/Resource.h>
 #include <d3d12.h>
+#include <tuple>
 
 #define FENCE_SIGNAL_VALUE 1
 
 
 namespace vaip {
-
-void FlushCommandQueue(Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue);
+using Microsoft::WRL::ComPtr;
+LARGE_INTEGER getStartingTime();
+int getElapsedTime(LARGE_INTEGER startingTime);
+void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue);
 
 gsl::span<const char> tensor_proto_as_raw(
     const ONNX_NAMESPACE::TensorProto& tensor);
@@ -42,8 +45,9 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(  //
     const void* initData,
     size_t byteSize);
 
-void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const Microsoft::WRL::ComPtr<ID3D12Resource>& InputBuffer,
+
+std::tuple<void*,int> tensor_proto_new_d3d12_gpu_to_cpu(
+    const ComPtr<ID3D12Resource>& InputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,

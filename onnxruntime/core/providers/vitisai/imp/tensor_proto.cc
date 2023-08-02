@@ -11,7 +11,31 @@
 namespace vaip {
 //using Microsoft::WRL::ComPtr;
 
-void FlushCommandQueue(Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
+LARGE_INTEGER getStartingTime() {
+  LARGE_INTEGER startingTime;
+  QueryPerformanceCounter(&startingTime);
+  return startingTime;
+}
+
+int getElapsedTime(LARGE_INTEGER startingTime) {
+  LARGE_INTEGER endingTime, elapsedMicroseconds, frequency;
+  QueryPerformanceFrequency(&frequency);
+  QueryPerformanceCounter(&endingTime);
+  elapsedMicroseconds.QuadPart = endingTime.QuadPart - startingTime.QuadPart;
+  //
+  // We now have the elapsed number of ticks, along with the
+  // number of ticks-per-second. We use these values
+  // to convert to the number of elapsed microseconds.
+  // To guard against loss-of-precision, we convert
+  // to microseconds *before* dividing by ticks-per-second.
+  //
+  elapsedMicroseconds.QuadPart *= 1000000;
+  elapsedMicroseconds.QuadPart /= frequency.QuadPart;
+
+  return (int)elapsedMicroseconds.QuadPart;
+}
+void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
+>>>>>>> 9b2358e7d (Added memcpy elapsed time in CSV)
     // CPU GPU synchronization
     // flushing cmd queue using a fence
     //
@@ -175,8 +199,8 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
      return GPUResource;
 }
 
-void* tensor_proto_new_d3d12_gpu_to_cpu(
-    const Microsoft::WRL::ComPtr<ID3D12Resource>& outputBuffer,
+std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
+    const ComPtr<ID3D12Resource>& outputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
@@ -227,16 +251,18 @@ void* tensor_proto_new_d3d12_gpu_to_cpu(
     
     ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));    
 
+    LARGE_INTEGER start = getStartingTime();
     // copy the data into a system memory array for further processing on the CPU side
     memcpy(dst, bufferData, tensorByteSize);
-   
+    int elapsedTime = getElapsedTime(start);
+    
     // unmap - deallocates cpu virtual address range
     D3D12_RANGE emptyRange{0, 0};
     readbackBuffer->Unmap(
         0,
         &emptyRange);
 
-    return dst;
+    return std::make_tuple(dst, elapsedTime);
 }
 
 ONNX_NAMESPACE::TensorProto tensor_proto_new_i64(
