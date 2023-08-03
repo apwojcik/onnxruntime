@@ -401,12 +401,12 @@ if (onnxruntime_USE_DNNL)
 endif()
 
 if (onnxruntime_USE_VITISAI)
-   
+   if(WIN32)
       file(GLOB_RECURSE onnxruntime_test_providers_vitisai_src CONFIGURE_DEPENDS
         "${TEST_SRC_DIR}/providers/vitisai/windows/*"
         )
       list(APPEND onnxruntime_test_providers_src ${onnxruntime_test_providers_vitisai_src})
-  
+   endif()
 endif()
 
 if (onnxruntime_USE_NNAPI_BUILTIN)

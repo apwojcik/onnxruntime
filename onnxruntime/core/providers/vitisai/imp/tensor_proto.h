@@ -18,10 +18,10 @@
 
 
 namespace vaip {
-using Microsoft::WRL::ComPtr;
+
 LARGE_INTEGER getStartingTime();
 int getElapsedTime(LARGE_INTEGER startingTime);
-void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue);
+void FlushCommandQueue(Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue);
 
 gsl::span<const char> tensor_proto_as_raw(
     const ONNX_NAMESPACE::TensorProto& tensor);
@@ -38,20 +38,19 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
     const std::string& name, const std::vector<int64_t>& shape,
     const std::vector<int32_t>& data);
 
-Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(  //
+std::tuple<Microsoft::WRL::ComPtr<ID3D12Resource>, int, int> tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
     Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
     const void* initData,
     size_t byteSize);
 
-
-std::tuple<void*,int> tensor_proto_new_d3d12_gpu_to_cpu(
-    const ComPtr<ID3D12Resource>& InputBuffer,
-    ID3D12Device* device,
-    ID3D12GraphicsCommandList* cmdList,
-    size_t tensorByteSize,
-    Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue);
+std::tuple<void*, int, int> tensor_proto_new_d3d12_gpu_to_cpu(
+        const Microsoft::WRL::ComPtr<ID3D12Resource>& outputBuffer,
+        ID3D12Device* device,
+        ID3D12GraphicsCommandList* cmdList,
+        size_t tensorByteSize,
+        Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue);
 
 static gsl::span<std::byte> AsByteSpan(void* data, size_t sizeInBytes);
 

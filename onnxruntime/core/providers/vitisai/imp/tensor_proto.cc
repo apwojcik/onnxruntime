@@ -4,12 +4,10 @@
 #include "./vai_assert.h"
 
 #include <iostream>
-#include <string>
 #include <fstream>
 
 
 namespace vaip {
-//using Microsoft::WRL::ComPtr;
 
 LARGE_INTEGER getStartingTime() {
   LARGE_INTEGER startingTime;
@@ -34,7 +32,7 @@ int getElapsedTime(LARGE_INTEGER startingTime) {
 
   return (int)elapsedMicroseconds.QuadPart;
 }
-void FlushCommandQueue(ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
+void FlushCommandQueue(Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue, ID3D12Device* device) {
     // CPU GPU synchronization
     // flushing cmd queue using a fence
     //
@@ -130,7 +128,7 @@ ONNX_NAMESPACE::TensorProto tensor_proto_new_i32(
 }
 
 // tensor proto for d3d12 (from cpu to gpu) - input tensor , add this before execution context
-Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
+std::tuple<Microsoft::WRL::ComPtr<ID3D12Resource>, int, int> tensor_proto_new_d3d12_cpu_to_gpu(
     ID3D12Device* device,
     Microsoft::WRL::ComPtr<ID3D12Resource>& UploadBuffer,
     ID3D12GraphicsCommandList* cmdList,
@@ -143,6 +141,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
     auto heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
     auto buffer = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
 
+    LARGE_INTEGER start = getStartingTime();
     // Create the actual default buffer resource
     ORT_THROW_IF_FAILED(device->CreateCommittedResource(
         &heap,
@@ -151,9 +150,11 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
         D3D12_RESOURCE_STATE_COMMON,
         nullptr,
         IID_PPV_ARGS(GPUResource.GetAddressOf())));
+    int GPUResourceElapsedTime = getElapsedTime(start);
 
     heap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 
+    start = getStartingTime();
     // In order to copy CPU memory data into our default buffer, we need
     // to ORT_THROW_IF_FAILED an intermediate upload heap - it is GPU upload buffer 
     ORT_THROW_IF_FAILED(device->CreateCommittedResource(
@@ -163,7 +164,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
          D3D12_RESOURCE_STATE_GENERIC_READ,
          nullptr,
          IID_PPV_ARGS(UploadBuffer.GetAddressOf())));
-
+    int UploadBufferElapsedTime = getElapsedTime(start);
      // Describe the data we want to copy into the default buffer.
      
      // pData: A pointer to a system memory array which contains the data to initialize
@@ -195,11 +196,11 @@ Microsoft::WRL::ComPtr<ID3D12Resource> tensor_proto_new_d3d12_cpu_to_gpu(
                                                            D3D12_RESOURCE_STATE_GENERIC_READ);
      cmdList->ResourceBarrier(1,&barrier2);
     
-     return GPUResource;
+     return std::make_tuple(GPUResource, GPUResourceElapsedTime, UploadBufferElapsedTime);
 }
 
-std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
-    const ComPtr<ID3D12Resource>& outputBuffer,
+std::tuple<void*, int, int> tensor_proto_new_d3d12_gpu_to_cpu(
+    const Microsoft::WRL::ComPtr<ID3D12Resource>& outputBuffer,
     ID3D12Device* device,
     ID3D12GraphicsCommandList* cmdList,
     size_t tensorByteSize,
@@ -209,6 +210,8 @@ std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
     D3D12_HEAP_PROPERTIES readbackHeapProperties{CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK)};
     D3D12_RESOURCE_DESC readbackBufferDesc{CD3DX12_RESOURCE_DESC::Buffer(tensorByteSize)};
     Microsoft::WRL::ComPtr<ID3D12Resource> readbackBuffer;
+
+    LARGE_INTEGER start = getStartingTime();
     ORT_THROW_IF_FAILED(device->CreateCommittedResource(
         &readbackHeapProperties,
         D3D12_HEAP_FLAG_NONE,
@@ -217,6 +220,7 @@ std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
         nullptr,
         IID_PPV_ARGS(&readbackBuffer)
         ));
+    int readbackBufferElapsedTime = getElapsedTime(start);
 
     // Schedule to copy the data to the default buffer to the readback
     // buffer.
@@ -250,7 +254,7 @@ std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
     
     ORT_THROW_IF_FAILED(readbackBuffer->Map(0, &range, reinterpret_cast<void**>(&bufferData)));    
 
-    LARGE_INTEGER start = getStartingTime();
+    start = getStartingTime();
     // copy the data into a system memory array for further processing on the CPU side
     memcpy(dst, bufferData, tensorByteSize);
     int elapsedTime = getElapsedTime(start);
@@ -261,7 +265,7 @@ std::tuple<void*, int> tensor_proto_new_d3d12_gpu_to_cpu(
         0,
         &emptyRange);
 
-    return std::make_tuple(dst, elapsedTime);
+    return std::make_tuple(dst, elapsedTime, readbackBufferElapsedTime);
 }
 
 ONNX_NAMESPACE::TensorProto tensor_proto_new_i64(
