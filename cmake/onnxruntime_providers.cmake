@@ -1385,7 +1385,11 @@ if (onnxruntime_USE_MIGRAPHX)
   endif()
 
   # Add search paths for default rocm installation
-  list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hcc /opt/rocm/hip /opt/rocm)
+  if (WIN32)
+    list(APPEND CMAKE_PREFIX_PATH $ENV{HIP_PATH})
+  else()
+    list(APPEND CMAKE_PREFIX_PATH /opt/rocm/hcc /opt/rocm/hip /opt/rocm)
+  endif()
 
   find_package(hip)
   find_package(migraphx PATHS ${AMD_MIGRAPHX_HOME})
