@@ -277,7 +277,11 @@ if (onnxruntime_USE_ROCM)
   endif()
 
   if (NOT CMAKE_HIP_COMPILER)
-    set(CMAKE_HIP_COMPILER "${onnxruntime_ROCM_HOME}/llvm/bin/clang++")
+    if (WIN32)
+      set(CMAKE_HIP_COMPILER "${onnxruntime_ROCM_HOME}/bin/clang-cl.exe")
+    else()
+      set(CMAKE_HIP_COMPILER "${onnxruntime_ROCM_HOME}/llvm/bin/clang++")
+    endif()
   endif()
 
   if (NOT CMAKE_HIP_ARCHITECTURES)
