@@ -1441,9 +1441,9 @@ def generate_build_tree(
                     else "OFF"
                 ),
                 f"-DCMAKE_BUILD_TYPE={config}",
-                f"-DCMAKE_PREFIX_PATH={build_dir}/{config}/installed"
-                if preinstalled_dir.exists() and not (args.arm64 or args.arm64ec or args.arm)
-                else "",
+                # f"-DCMAKE_PREFIX_PATH={build_dir}/{config}/installed"
+                # if preinstalled_dir.exists() and not (args.arm64 or args.arm64ec or args.arm)
+                # else "",
             ],
             cwd=config_build_dir,
             cuda_home=cuda_home,
