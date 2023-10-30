@@ -1517,7 +1517,8 @@ if (onnxruntime_USE_ROCM)
 
   # MIOpen version
   if(NOT DEFINED ENV{MIOPEN_PATH})
-    set(MIOPEN_PATH ${onnxruntime_ROCM_HOME})
+    # set(MIOPEN_PATH ${onnxruntime_ROCM_HOME})
+    set(MIOPEN_PATH C:/opt/miopen)
   else()
     set(MIOPEN_PATH $ENV{MIOPEN_PATH})
   endif()
