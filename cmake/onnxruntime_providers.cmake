@@ -1551,9 +1551,13 @@ if (onnxruntime_USE_ROCM)
   message("MIOPEN_VERSION_DEV_INT:   ${MIOPEN_VERSION_DEV_INT}")
   add_definitions(-DMIOPEN_VERSION=${MIOPEN_VERSION_DEV_INT})
 
-  find_library(RCCL_LIB rccl REQUIRED)
-  find_library(ROCTRACER_LIB roctracer64 REQUIRED)
-  set(ONNXRUNTIME_ROCM_LIBS roc::rocblas MIOpen ${RCCL_LIB} ${ROCTRACER_LIB})
+  if (WIN32)
+    set(ONNXRUNTIME_ROCM_LIBS roc::rocblas MIOpen)
+  else()
+    find_library(RCCL_LIB rccl REQUIRED)
+    find_library(ROCTRACER_LIB roctracer64 REQUIRED)
+    set(ONNXRUNTIME_ROCM_LIBS roc::rocblas MIOpen ${RCCL_LIB} ${ROCTRACER_LIB})
+  endif()
 
   file(GLOB_RECURSE onnxruntime_providers_rocm_cc_srcs CONFIGURE_DEPENDS
     "${ONNXRUNTIME_ROOT}/core/providers/rocm/*.h"
