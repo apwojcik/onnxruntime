@@ -42,7 +42,7 @@ namespace onnxruntime {
 using TimePoint = std::chrono::high_resolution_clock::time_point;
 
 #ifdef _WIN32
-#define ORT_UNUSED_PARAMETER(x) (x)
+#define ORT_UNUSED_PARAMETER(x) (void)(x)
 #else
 #define ORT_UNUSED_PARAMETER(x) (void)(x)
 #endif
