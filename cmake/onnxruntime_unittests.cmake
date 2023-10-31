@@ -1484,7 +1484,7 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     list(APPEND custom_op_src_patterns
         "${ONNXRUNTIME_SHARED_LIB_TEST_SRC_DIR}/rocm_ops.hip"
         "${TEST_SRC_DIR}/testdata/custom_op_library/rocm/rocm_ops.*")
-    list(APPEND custom_op_lib_include ${onnxruntime_ROCM_HOME}/include)
+    list(APPEND custom_op_lib_include ${onnxruntime_ROCM_HOME}/include C:/opt/miopen/include)
     list(APPEND custom_op_lib_option "-D__HIP_PLATFORM_AMD__=1 -D__HIP_PLATFORM_HCC__=1")
   endif()
 
