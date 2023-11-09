@@ -1,4 +1,6 @@
 {
+    // Add cmake.sourceDirectory for CMakePresets.json file
+    "cmake.sourceDirectory": "${workspaceFolder}/cmake",
     // Always remove trailing whitespaces
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
