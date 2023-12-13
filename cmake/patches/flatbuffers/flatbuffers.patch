@@ -11,6 +11,15 @@ index 3987eac9..5e5462f1 100644
    set(FLATBUFFERS_PRIVATE_CXX_FLAGS "-Wold-style-cast")
    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.4)
      if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+@@ -239,7 +239,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
+   set(CMAKE_CXX_FLAGS
+     "${CMAKE_CXX_FLAGS} -fsigned-char")
+
+-elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
++elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT} MATCHES "GNU")
+   set(CMAKE_CXX_FLAGS
+       "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -pedantic -Werror -Wextra -Wno-unused-parameter")
+   set(FLATBUFFERS_PRIVATE_CXX_FLAGS "-Wold-style-cast")
 diff --git a/src/idl_gen_rust.cpp b/src/idl_gen_rust.cpp
 index 55b8439b..dc03e8a8 100644
 --- a/src/idl_gen_rust.cpp
