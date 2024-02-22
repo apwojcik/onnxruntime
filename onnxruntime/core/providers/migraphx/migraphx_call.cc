@@ -2,7 +2,11 @@
 // Licensed under the MIT License.
 
 #include "core/providers/shared_library/provider_api.h"
+#ifdef _WIN32
+#include <Windows.h>
+#else
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <miopen/miopen.h>
 #include <rocblas/rocblas.h>
