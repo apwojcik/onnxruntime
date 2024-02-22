@@ -423,16 +423,25 @@ static bool IsUnsupportedOpMode(const onnxruntime::GraphViewer& graph_viewer, co
     if (arg_s != nullptr) {
       const auto& tensor_dims = arg_s->dim();
       std::vector<std::size_t> dims;
-      std::transform(tensor_dims.begin(),
-                     tensor_dims.end(),
-                     std::back_inserter(dims),
-                     [&](auto&& d) -> std::size_t {
-                       if (d.has_dim_value()) {
-                         return d.dim_value();
-                       } else {
-                         return 0;
-                       }
-                     });
+      // std::transform(tensor_dims.begin(),
+      //                tensor_dims.end(),
+      //                std::back_inserter(dims),
+      //                [&](auto&& d) -> std::size_t {
+      //                  if (d.has_dim_value()) {
+      //                    return d.dim_value();
+      //                  } else {
+      //                    return 0;
+      //                  }
+      //                });
+      for (auto&& dim : tensor_dims) {
+        dims.push_back([&](const auto& d) -> std::size_t {
+          if (d.has_dim_value()) {
+            return d.dim_value();
+          } else {
+            return 0;
+          }
+        }(dim));
+      }
       if (dims == std::vector<std::size_t>{0}) {
         return true;
       }
@@ -512,16 +521,25 @@ void SubgraphPostProcessing(const onnxruntime::GraphViewer& graph_viewer, std::v
                   if (arg_s == nullptr) return false;
                   const auto& tensor_dims = arg_s->dim();
                   std::vector<std::size_t> dims;
-                  std::transform(tensor_dims.begin(),
-                                 tensor_dims.end(),
-                                 std::back_inserter(dims),
-                                 [&](auto&& d) -> std::size_t {
-                                   if (d.has_dim_value()) {
-                                     return d.dim_value();
-                                   } else {
-                                     return 1;
-                                   }
-                                 });
+                  // std::transform(tensor_dims.begin(),
+                  //                tensor_dims.end(),
+                  //                std::back_inserter(dims),
+                  //                [&](auto&& d) -> std::size_t {
+                  //                  if (d.has_dim_value()) {
+                  //                    return d.dim_value();
+                  //                  } else {
+                  //                    return 1;
+                  //                  }
+                  //                });
+                  for (auto&& dim : tensor_dims) {
+                    dims.push_back([&](const auto& d) -> std::size_t {
+                      if (d.has_dim_value()) {
+                        return d.dim_value();
+                      } else {
+                        return 1;
+                      }
+                    }(dim));
+                  }
                   return (std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<std::size_t>{}) > 300);
                 })) {
               return false;
