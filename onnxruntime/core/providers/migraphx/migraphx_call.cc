@@ -14,6 +14,10 @@
 #include "core/common/common.h"
 #include "core/common/status.h"
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 64
+#endif
+
 namespace onnxruntime {
 
 using namespace common;
