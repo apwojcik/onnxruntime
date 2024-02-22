@@ -1,3 +1,4 @@
+#ifdef USE_ROCTRACER
 #pragma once
 
 #include <atomic>
@@ -61,3 +62,4 @@ class RoctracerManager : public GPUTracerManager<RoctracerManager> {
 
 } /* end namespace profiling */
 } /* end namespace onnxruntime*/
+#endif

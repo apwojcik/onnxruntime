@@ -4,9 +4,7 @@
 #include <map>
 
 #include "core/common/gpu_profiler_common.h"
-#ifdef USE_ROCTRACER
 #include "roctracer_manager.h"
-#endif
 
 #if defined(USE_ROCM) && defined(ENABLE_ROCM_PROFILING)
 

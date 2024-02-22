@@ -1,3 +1,4 @@
+#ifdef USE_ROCTRACER
 #include <time.h>
 #include <cstring>
 #include <chrono>
@@ -309,3 +310,4 @@ void RoctracerManager::ProcessActivityBuffers(const std::vector<ProfilerActivity
 
 } /* end namespace profiling */
 } /* end namespace onnxruntime */
+#endif
