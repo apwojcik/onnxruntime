@@ -8,8 +8,11 @@
 #include "core/providers/rocm/rocm_allocator.h"
 #include "core/providers/rocm/rocm_fwd.h"
 #include "core/providers/rocm/gpu_data_transfer.h"
-#include "core/providers/rocm/rocm_profiler.h"
 #include "core/providers/rocm/rocm_stream_handle.h"
+
+#ifdef USE_ROCTRACER
+#include "core/providers/rocm/rocm_profiler.h"
+#endif
 
 #ifndef DISABLE_CONTRIB_OPS
 #include "contrib_ops/rocm/rocm_contrib_kernels.h"
@@ -243,9 +246,13 @@ ITuningContext* ROCMExecutionProvider::GetTuningContext() const {
   return const_cast<rocm::tunable::RocmTuningContext*>(&tuning_context_);
 }
 
+#ifdef USE_ROCTRACER
 std::unique_ptr<profiling::EpProfiler> ROCMExecutionProvider::GetProfiler() {
   return std::make_unique<profiling::RocmProfiler>();
 }
+#else
+return nullptr;
+#endif
 
 ROCMExecutionProvider::PerThreadContext& ROCMExecutionProvider::GetPerThreadContext() const {
   const auto& per_thread_context_cache = PerThreadContextCache();
