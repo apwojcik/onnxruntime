@@ -152,11 +152,11 @@ function(setup_mlas_source_for_windows)
       ${MLAS_SRC_DIR}/dgemm.cpp
       ${mlas_platform_srcs_avx}
       ${mlas_platform_srcs_avx2}
-      # ${MLAS_SRC_DIR}/qgemm_kernel_amx.cpp
+      ${MLAS_SRC_DIR}/qgemm_kernel_amx.cpp
       ${MLAS_SRC_DIR}/qgemm_kernel_avx2.cpp
       ${MLAS_SRC_DIR}/qgemm_kernel_sse.cpp
       ${MLAS_SRC_DIR}/qgemm_kernel_sse41.cpp
-      # ${MLAS_SRC_DIR}/intrinsics/avx512/quantize_avx512f.cpp
+      ${MLAS_SRC_DIR}/intrinsics/avx512/quantize_avx512f.cpp
       ${MLAS_SRC_DIR}/amd64/QgemmU8S8KernelAmx.asm
       ${MLAS_SRC_DIR}/amd64/QgemmU8S8KernelAvx2.asm
       ${MLAS_SRC_DIR}/amd64/QgemmU8U8KernelAvx2.asm
@@ -193,11 +193,15 @@ function(setup_mlas_source_for_windows)
       ${MLAS_SRC_DIR}/amd64/TanhKernelFma3.asm
       ${MLAS_SRC_DIR}/amd64/ErfKernelFma3.asm
     )
-    # if (NOT onnxruntime_ORT_MINIMAL_BUILD)
-    #   target_sources(onnxruntime_mlas PRIVATE
-    #     ${MLAS_SRC_DIR}/q4gemm_avx512.cpp
-    #   )
-    # endif()
+    set_source_files_properties(${MLAS_SRC_DIR}/qgemm_kernel_amx.cpp PROPERTIES COMPILE_FLAGS "-mamx-tile -mamx-int8 -mavx2 -mavx512bw -mavx512dq -mavx512vl -mavx512f")
+    set_source_files_properties(${MLAS_SRC_DIR}/intrinsics/avx512/quantize_avx512f.cpp PROPERTIES COMPILE_FLAGS "-mavx512f")
+
+    if (NOT onnxruntime_ORT_MINIMAL_BUILD)
+      target_sources(onnxruntime_mlas PRIVATE
+        ${MLAS_SRC_DIR}/q4gemm_avx512.cpp
+      )
+      set_source_files_properties(${MLAS_SRC_DIR}/q4gemm_avx512.cpp PROPERTIES COMPILE_FLAGS "-mfma -mavx512vnni -mavx512bw -mavx512dq -mavx512vl -mavx512f")
+    endif()
 
   else()
     target_sources(onnxruntime_mlas PRIVATE
