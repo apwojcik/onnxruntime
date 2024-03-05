@@ -2612,7 +2612,7 @@ TEST(MathOpTest, Mean_8) {
   test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kTensorrtExecutionProvider});  // TensorRT: Input batch size is inconsistent
 }
 
-#ifdef _LIBCPP_VERSION
+#if defined(_LIBCPP_VERSION) || defined(_MSC_VER)
 #define MATH_NO_EXCEPT
 #else
 #define MATH_NO_EXCEPT noexcept
