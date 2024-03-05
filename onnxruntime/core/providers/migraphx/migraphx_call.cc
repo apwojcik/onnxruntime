@@ -42,9 +42,17 @@ std::conditional_t<THRW, void, Status> RocmCall(
     ERRTYPE retCode, const char* exprString, const char* libName, ERRTYPE successCode, const char* msg, const char* file, const int line) {
   if (retCode != successCode) {
     try {
+#ifdef _WIN32
+      std::string hostname_str = GetEnvironmentVar("COMPUTERNAME");
+      if (hostname_str.empty()) {
+        hostname_str = "?";
+      }
+      const char* hostname = hostname_str.c_str();
+#else
       char hostname[HOST_NAME_MAX];
       if (gethostname(hostname, HOST_NAME_MAX) != 0)
         strcpy(hostname, "?");
+#endif
       int currentHipDevice;
       (void)hipGetDevice(&currentHipDevice);
       (void)hipGetLastError();  // clear last HIP error
