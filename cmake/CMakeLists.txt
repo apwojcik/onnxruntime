@@ -52,7 +52,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Enable CTest
 enable_testing()
-include(Dart)
+include(CTest)
 
 if (NOT CMAKE_BUILD_TYPE)
   message(STATUS "Build type not set - using RelWithDebInfo")
@@ -1460,9 +1460,6 @@ if (onnxruntime_USE_TENSORRT)
 endif()
 
 if (onnxruntime_USE_MIGRAPHX)
-  if (WIN32)
-    message(FATAL_ERROR "MIGraphX does not support build in Windows!")
-  endif()
   set(AMD_MIGRAPHX_HOME ${onnxruntime_MIGRAPHX_HOME})
 endif()
 

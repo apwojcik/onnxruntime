@@ -14,7 +14,7 @@ class HIPAllocator : public IAllocator {
   HIPAllocator(int device_id, const char* name)
       : IAllocator(
             OrtMemoryInfo(name, OrtAllocatorType::OrtDeviceAllocator,
-                          OrtDevice(OrtDevice::GPU, OrtDevice::MemType::DEFAULT, device_id),
+                          OrtDevice(OrtDevice::GPU, OrtDevice::MemType::DEFAULT, static_cast<OrtDevice::DeviceId>(device_id)),
                           device_id, OrtMemTypeDefault)) {}
 
   virtual void* Alloc(size_t size) override;
@@ -55,7 +55,7 @@ class HIPPinnedAllocator : public IAllocator {
   HIPPinnedAllocator(int device_id, const char* name)
       : IAllocator(
             OrtMemoryInfo(name, OrtAllocatorType::OrtDeviceAllocator,
-                          OrtDevice(OrtDevice::CPU, OrtDevice::MemType::HIP_PINNED, device_id),
+                          OrtDevice(OrtDevice::CPU, OrtDevice::MemType::HIP_PINNED, static_cast<OrtDevice::DeviceId>(device_id)),
                           device_id, OrtMemTypeCPUOutput)) {}
 
   virtual void* Alloc(size_t size) override;
